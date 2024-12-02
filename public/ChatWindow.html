@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="main-wrapper" style=>
+        <p id="title">Chat Window</p>
+        <div id="messages-wrapper"></div>
+        <div>
+            <input id="message-input"/>
+            <button id="send-button"><p>Send</p></button>
+        </div>
+    </div>
+</body>
+<script>
+
+    const sendMessage=async (message)=>{
+        let res=await fetch("http://18.223.170.225:3000/v2/chat-bot",{
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({userMessage:message}),
+            method: "POST"
+        });
+        let data=await res.json();
+        if(data.success)
+        {
+            addMessageUI(data.data,"recieved")
+        }
+    }
+    
+    const addMessageUI=(msg,type)=>{
+        let message=document.createElement("p");
+        message.style.margin=0;
+        message.textContent=msg;
+        message.style.textAlign=type=="sent"?"end":"start";
+        messagesWrapper.appendChild(message);
+    }
+    
+    document.head.style.height="100%";
+    document.body.style.height="100%";
+    const mainWrapper=document.getElementById("main-wrapper");
+    const title=document.getElementById("title");
+    const closeButton=document.getElementById("close-button");
+    const messagesWrapper=document.getElementById("messages-wrapper");
+    const messageInput=document.getElementById("message-input");
+    const sendButton=document.getElementById("send-button");
+    mainWrapper.style.width="100%";
+    mainWrapper.style.height="100%";
+    title.style.margin="0px";
+    messagesWrapper.style.gap="10px";
+    mainWrapper.style.display="flex";
+    mainWrapper.style.flexDirection="column";
+    mainWrapper.style.gap="20px";
+    sendButton.addEventListener("click",(e)=>{
+        const msg=messageInput.value;
+        if(msg.length>0)
+        {
+            messageInput.value="";
+            addMessageUI(msg,"sent")
+            sendButton.innerText="Loading";
+            sendMessage(msg).then(()=>{
+                sendButton.innerText="Send";
+            })
+        }
+        else
+        {
+            alert("Enter a message");
+        }
+    })
+    
+</script>
+</html>

@@ -9,6 +9,9 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("tiny"))
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
+app.use("/widget", express.static(path.join(__dirname, "public"), {
+    extensions: ['html']
+}));
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
