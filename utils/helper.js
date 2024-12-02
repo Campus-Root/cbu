@@ -28,7 +28,7 @@ export const getContext = async (userMessage) => {
                     "queryVector": await EmbeddingFunct(userMessage),
                     "path": "embedding",
                     "numCandidates": 100,
-                    "limit": 10,
+                    "limit": 5,
                     "index": "cbu_vector_index"
                 }
             },
@@ -56,7 +56,7 @@ export const getContextV2 = async (userMessage) => {
                     "queryVector": await EmbeddingFunct(userMessage),
                     "path": "embedding",
                     "numCandidates": 100,
-                    "limit": 10,
+                    "limit": 5,
                     "index": "cbu_vector_index2"
                 }
             },
