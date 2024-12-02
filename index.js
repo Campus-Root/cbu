@@ -3,6 +3,7 @@ import { getContext, getContextV2, getResponse } from './utils/helper.js';
 import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import cors from "cors"
+import path from 'path';
 const app = express()
 const port = 3000
 app.use(cors());
