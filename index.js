@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import morgan from 'morgan';
 const app = express()
 const port = 3000
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("tiny"))
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
