@@ -16,11 +16,12 @@ export const EmbeddingFunct = async (text) => {
     }
 }
 export const getContext = async (userMessage) => {
+    const url = process.env.MONGO_URL;
+    const dbName = 'CBU';
+    const client = await MongoClient.connect(url);
+    const db = client.db(dbName);
     try {
-        const url = process.env.MONGO_URL;
-        const dbName = 'CBU';
-        const client = await MongoClient.connect(url);
-        const db = client.db(dbName);
+
         let context = await db.collection('embeddings').aggregate([
             {
                 $vectorSearch: {
@@ -43,11 +44,12 @@ export const getContext = async (userMessage) => {
     }
 }
 export const getContextV2 = async (userMessage) => {
+    const url = process.env.MONGO_URL;
+    const dbName = 'CBU';
+    const client = await MongoClient.connect(url);
+    const db = client.db(dbName);
     try {
-        const url = process.env.MONGO_URL;
-        const dbName = 'CBU';
-        const client = await MongoClient.connect(url);
-        const db = client.db(dbName);
+        
         let context = await db.collection('test').aggregate([
             {
                 $vectorSearch: {
