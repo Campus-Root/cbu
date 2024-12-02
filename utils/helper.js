@@ -42,6 +42,33 @@ export const getContext = async (userMessage) => {
         return null;
     }
 }
+export const getContextV2 = async (userMessage) => {
+    try {
+        const url = process.env.MONGO_URL;
+        const dbName = 'CBU';
+        const client = await MongoClient.connect(url);
+        const db = client.db(dbName);
+        let context = await db.collection('test').aggregate([
+            {
+                $vectorSearch: {
+                    "queryVector": await EmbeddingFunct(userMessage),
+                    "path": "embedding",
+                    "numCandidates": 100,
+                    "limit": 10,
+                    "index": "cbu_vector_index2"
+                }
+            },
+            { $project: { text: 1 } }
+        ]).toArray()
+        client.close();
+        return context;
+
+    } catch (error) {
+        client.close();
+        console.log(error);
+        return null;
+    }
+}
 export const getResponse = async (contexts, userMessage) => {
     try {
         const response = await openai.chat.completions.create({
