@@ -83,8 +83,7 @@ export const getResponse = async (contexts, userMessage, prevMessages = []) => {
                 role: "user",
                 content: `Here is some information that exists in database which might help you relate to the user's query: 
                     ${contexts.map(context => context.text).join('\n')}\n
-                    Use this information to answer the following questions concisely:  "${userMessage}"
-                    If you are unable to answer the question, use this link as https://admissions.cbu.edu/register/request-more-info user can visit this page for more information`
+                    Use this information to answer the following questions concisely:  "${userMessage}"`
             }],
         });
         return response
