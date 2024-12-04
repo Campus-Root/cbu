@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Button</title>
+    <style>
+        html,head,body{
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body{
+            display: flex;
+            justify-content: end;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chatbutton{
+            align-self: end;
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 1000px;
+            background-color: white;
+            box-shadow: 2px 2px 29px rgba(0, 0, 0, 0.12);
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chaticon{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .chatwindow{
+            display: flex;
+            flex-direction: column;
+            width:400px;
+            height: 0;
+            position: absolute;
+            bottom: 10%;
+            right: 10%;
+            border: none;
+            border-radius: "20px";
+            background-color: white;
+            box-shadow: 2px 2px 29px rgba(0, 0, 0, 0.16);
+            transition:height 0.3s;
+            z-index: 99999;
+            border-radius: 10px;
+        }
+        .windowiframe{
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            border: none;
+            transform: scale(0);
+            transition:transform 0.3s;
+        }
+        .backbutton{
+            transform: scale(0);
+            transition:transform 0.3s;
+            border: none;
+            background-color: transparent;
+        }
+        .backicon{
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <button id="chat-button" class="chatbutton">
+        <img class="chaticon" src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733209955/chat-6_sewtfh.png"/>
+    </button>
+    <div id="chat-window" class="chatwindow">
+        <button id="back-button" class="backbutton"><img id="back-icon" class="backicon" src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733207158/down-2_rh7c2e.png" /></button>
+        <iframe id="window-iframe" class="windowiframe" src="http://18.223.170.225:3000/widget/ChatWindow"></iframe>
+    </div>
+</body>
+<script>
+
+    const setIframe=(action)=>{
+        switch(action){
+            case "show":
+                chatWindow.style.display="flex";
+                chatWindow.style.height="0px";
+                iframe.style.transform="scale(0)";
+                backButton.style.transform="scale(0)";
+                setTimeout(()=>{
+                    chatWindow.style.height="600px";
+                    iframe.style.transform="scale(1)";
+                    backButton.style.transform="scale(1)";
+                },10)
+                break;
+
+            case "hide":
+                chatWindow.style.height="0px";
+                iframe.style.transform="scale(0)";
+                backButton.style.transform="scale(0)";
+                setTimeout(()=>{
+                    chatWindow.style.display="none";
+                },300)
+                break;
+        }
+    }
+    
+    const chatWindow=document.getElementById("chat-window");
+    const iframe=document.getElementById("window-iframe");
+    const button=document.getElementById("chat-button");
+    const backButton=document.getElementById("back-button");
+    button.addEventListener("click",()=>setIframe("show"));
+    backButton.addEventListener("click",()=>setIframe("hide"));
+</script>
+</html>

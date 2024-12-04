@@ -3,22 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Chat Window</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <style>
+        html,head,body{
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        p{
+            font-family: "Open Sans";
+        }
+        .mainwrapper{
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .messageswrapper{
+            gap: 10px;
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            overflow-y: scroll;
+        }
+        .messagewrapper{
+            margin: 0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .title{
+            margin: 0;
+        }
+        .messageinputwrapper{
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+        .messageinput{
+            display: flex;
+            flex: 1;
+            margin: 0;
+            border: 1px solid rgba(0, 0, 0, 0.16);
+            border-radius: 10px;
+        }
+        .titlewrapper{
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+        .aiicon{
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+        .sendbutton{
+            background-color: white;
+            border: none;
+        }
+        .emptymessage{
+            margin: auto;
+            align-self: center;
+        }
+    </style>
 </head>
 <body>
-    <div id="main-wrapper" style=>
-        <p id="title">Chat Window</p>
-        <div id="messages-wrapper"></div>
-        <div>
-            <input id="message-input"/>
-            <button id="send-button"><p>Send</p></button>
+    <div id="main-wrapper" class="mainwrapper">
+        <div class="titlewrapper">
+            <img class="aiicon" src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733205089/ai-3_qe7s8x.png"/>
+            <p id="title" class="title">AI Virtual Agent</p>
+        </div>
+        <div id="messages-wrapper" class="messageswrapper">
+            <p id="empty-message" class="emptymessage">How can I help you today?</p>
+        </div>
+        <div class="messageinputwrapper">
+            <input id="message-input" class="messageinput"/>
+            <button id="send-button" class="sendbutton">
+                <!-- <p>Send</p> -->
+                <img id="send-icon" class="aiicon" src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733205278/send-2_h2j3f5.png"/>
+            </button>
         </div>
     </div>
 </body>
 <script>
 
-    const sendMessage=async (message)=>{
-        let res=await fetch("http://18.223.170.225:3000/v2/chat-bot",{
+    const apiRequest=async (message)=>{
+        let res=await fetch("http://18.223.170.225:3000/v1/chat-bot",{
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -32,45 +107,49 @@
         }
     }
     
-    const addMessageUI=(msg,type)=>{
-        let message=document.createElement("p");
-        message.style.margin=0;
-        message.textContent=msg;
-        message.style.textAlign=type=="sent"?"end":"start";
-        messagesWrapper.appendChild(message);
-    }
-    
-    document.head.style.height="100%";
-    document.body.style.height="100%";
-    const mainWrapper=document.getElementById("main-wrapper");
-    const title=document.getElementById("title");
-    const closeButton=document.getElementById("close-button");
-    const messagesWrapper=document.getElementById("messages-wrapper");
-    const messageInput=document.getElementById("message-input");
-    const sendButton=document.getElementById("send-button");
-    mainWrapper.style.width="100%";
-    mainWrapper.style.height="100%";
-    title.style.margin="0px";
-    messagesWrapper.style.gap="10px";
-    mainWrapper.style.display="flex";
-    mainWrapper.style.flexDirection="column";
-    mainWrapper.style.gap="20px";
-    sendButton.addEventListener("click",(e)=>{
-        const msg=messageInput.value;
+    const sendMessage=(msg)=>{
         if(msg.length>0)
         {
             messageInput.value="";
-            addMessageUI(msg,"sent")
-            sendButton.innerText="Loading";
-            sendMessage(msg).then(()=>{
-                sendButton.innerText="Send";
+            addMessageUI(msg,"sent");
+            if(document.getElementById("empty-message"))
+            {
+                messagesWrapper.removeChild(document.getElementById("empty-message"));
+            }
+            sendIcon.src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733205544/loader_h79i9w.gif"
+            apiRequest(msg).then(()=>{
+                sendIcon.src="https://res.cloudinary.com/dfbxzbvw1/image/upload/v1733205278/send-2_h2j3f5.png"
             })
         }
         else
         {
             alert("Enter a message");
         }
-    })
+    }
+
+    const addMessageUI=(msg,type)=>{
+        let message=document.createElement("p");
+        message.className="messagewrapper";
+        message.textContent=msg;
+        message.style.alignSelf=type=="sent"?"end":"start";
+        message.style.textAlign=type=="sent"?"end":"start";
+        message.style.backgroundColor=type=="sent"?"rgba(0, 0, 0, 0.02)":"#F7F6FB"
+        messagesWrapper.appendChild(message);
+    }
     
+    const mainWrapper=document.getElementById("main-wrapper");
+    const title=document.getElementById("title");
+    const closeButton=document.getElementById("close-button");
+    const messagesWrapper=document.getElementById("messages-wrapper");
+    const messageInput=document.getElementById("message-input");
+    const sendButton=document.getElementById("send-button");
+    const sendIcon=document.getElementById("send-icon");
+    sendButton.addEventListener("click",(e)=>sendMessage(messageInput.value))
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage(messageInput.value)
+        }
+  });
 </script>
+
 </html>
