@@ -71,14 +71,15 @@ export const getContextV2 = async (userMessage) => {
         return null;
     }
 }
-export const getResponse = async (contexts, userMessage) => {
+export const getResponse = async (contexts, userMessage, prevMessages = []) => {
     try {
+        let messages = [{
+            "role": "system",
+            "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU."
+        }, ...prevMessages]
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
-            messages: [{
-                "role": "system",
-                "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU."
-            }, {
+            messages: [...messages, {
                 role: "user",
                 content: `Here is some information that exists in database which might help you relate to the user's query: 
                     ${contexts.map(context => context.text).join('\n')}\n

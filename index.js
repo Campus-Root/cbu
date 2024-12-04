@@ -32,10 +32,10 @@ app.post('/v1/chat-bot', async (req, res) => {
     }
 })
 app.post('/v2/chat-bot', async (req, res) => {
-    const { userMessage } = req.body;
+    const { userMessage, prevMessages = [] } = req.body;
     const contexts = await getContextV2(userMessage)
     try {
-        const response = await getResponse(contexts, userMessage);
+        const response = await getResponse(contexts, userMessage, prevMessages);
         const botMessage = response.choices[0].message.content;
         res.status(200).send({ success: true, data: botMessage })
     } catch (error) {
