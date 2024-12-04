@@ -92,12 +92,19 @@
 </body>
 <script>
 
+    const handleMessages=()=>{
+
+    }
+
     const apiRequest=async (message)=>{
         let res=await fetch("http://18.223.170.225:3000/v1/chat-bot",{
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({userMessage:message}),
+            body: JSON.stringify({
+                userMessage:message,
+                prevMessages:allMessages
+            }),
             method: "POST"
         });
         let data=await res.json();
@@ -128,6 +135,8 @@
     }
 
     const addMessageUI=(msg,type)=>{
+        allMessages.push({role:type=="sent"?"user":"assistant",content:msg});
+        console.log("all messages",allMessages);
         let message=document.createElement("p");
         message.className="messagewrapper";
         message.textContent=msg;
@@ -137,6 +146,7 @@
         messagesWrapper.appendChild(message);
     }
     
+    const allMessages=[];
     const mainWrapper=document.getElementById("main-wrapper");
     const title=document.getElementById("title");
     const closeButton=document.getElementById("close-button");
