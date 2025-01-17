@@ -75,7 +75,7 @@ export const getResponse = async (contexts, userMessage, prevMessages = []) => {
     try {
         let messages = [{
             "role": "system",
-            "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU."
+            "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU.Answer in same language as user.",
         }, ...prevMessages]
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
