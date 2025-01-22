@@ -63,8 +63,38 @@ export const getContextV2 = async (userMessage) => {
             { $project: { text: 1 } }
         ]).toArray()
         client.close();
-        return context;
-
+        return context.reduce((acc, ele) => acc += `\n${ele.txt}\n`, "");
+    } catch (error) {
+        client.close();
+        console.log(error);
+        return null;
+    }
+}
+export const getContextFromFullSite = async (userMessage) => {
+    const url = process.env.MONGO_URL;
+    const dbName = 'CBU';
+    const client = await MongoClient.connect(url);
+    const db = client.db(dbName);
+    try {
+        let context = await db.collection('fullSite').aggregate([
+            {
+                "$vectorSearch": {
+                    "index": "vector_index",
+                    "path": "embeddingVector",
+                    "queryVector": await EmbeddingFunct(userMessage),
+                    "numCandidates": 100,
+                    "limit": 3
+                }
+            },
+            {
+                $project: {
+                    content: 1,
+                    summary: 1,
+                }
+            }
+        ]).toArray()
+        client.close();
+        return context.reduce((acc, ele) => acc += `\n${ele.content}\n`, "");
     } catch (error) {
         client.close();
         console.log(error);
@@ -73,16 +103,17 @@ export const getContextV2 = async (userMessage) => {
 }
 export const getResponse = async (contexts, userMessage, prevMessages = []) => {
     try {
+        if (contexts == "") console.log("Empty context received")
         let messages = [{
             "role": "system",
             "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU.Answer in same language as user.",
         }, ...prevMessages]
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o-mini",
             messages: [...messages, {
                 role: "user",
                 content: `Here is some information that exists in database which might help you relate to the user's query: 
-                    ${contexts.map(context => context.text).join('\n')}\n
+                    ${contexts}\n
                     Use this information to answer the following questions concisely:  "${userMessage}"`
             }],
         });

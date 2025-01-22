@@ -1,5 +1,5 @@
 import express from 'express'
-import { getContext, getContextV2, getResponse } from './utils/helper.js';
+import { getContext, getContextFromFullSite, getContextV2, getResponse } from './utils/helper.js';
 import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import cors from "cors"
@@ -33,7 +33,7 @@ app.post('/v1/chat-bot', async (req, res) => {
 })
 app.post('/v2/chat-bot', async (req, res) => {
     const { userMessage, prevMessages = [] } = req.body;
-    const contexts = await getContextV2(userMessage)
+    const contexts = await getContextFromFullSite(userMessage)
     try {
         const response = await getResponse(contexts, userMessage, prevMessages);
         const botMessage = response.choices[0].message.content;
