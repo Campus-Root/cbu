@@ -1,5 +1,5 @@
 import express from 'express'
-import { getContext, getContextFromFullSite, getResponse, openai } from './utils/helper.js';
+import { getContextFromFullSite, getResponse, openai } from './utils/helper.js';
 import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import cors from "cors"
@@ -20,17 +20,6 @@ app.use("/widget", express.static(path.join(__dirname, "public"), {
 }));
 app.get('/', (req, res) => {
     res.send('Hello World!')
-})
-app.post('/v1/chat-bot', async (req, res) => {
-    const { userMessage } = req.body;
-    const contexts = await getContext(userMessage)
-    try {
-        const response = await getResponse(contexts, userMessage);
-        const botMessage = response.choices[0].message.content;
-        res.status(200).send({ success: true, data: botMessage })
-    } catch (error) {
-        console.error("Error with chatbot API:", error);
-    }
 })
 app.post('/v2/chat-bot', async (req, res) => {
     const { userMessage, prevMessages = [] } = req.body;
@@ -57,7 +46,7 @@ app.post('/v3/chat-bot', async (req, res) => {
         }, ...prevMessages]
         const stream = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [ ...messages,
+            messages: [...messages,
             {
                 role: "user",
                 content: `Here is some information that exists in the database which might help you relate to the user's query: 

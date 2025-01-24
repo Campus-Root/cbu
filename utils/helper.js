@@ -15,61 +15,6 @@ export const EmbeddingFunct = async (text) => {
         return null;
     }
 }
-export const getContext = async (userMessage) => {
-    const url = process.env.MONGO_URL;
-    const dbName = 'CBU';
-    const client = await MongoClient.connect(url);
-    const db = client.db(dbName);
-    try {
-
-        let context = await db.collection('embeddings').aggregate([
-            {
-                $vectorSearch: {
-                    "queryVector": await EmbeddingFunct(userMessage),
-                    "path": "embedding",
-                    "numCandidates": 100,
-                    "limit": 5,
-                    "index": "cbu_vector_index"
-                }
-            },
-            { $project: { text: 1 } }
-        ]).toArray()
-        client.close();
-        return context;
-
-    } catch (error) {
-        client.close();
-        console.log(error);
-        return null;
-    }
-}
-export const getContextV2 = async (userMessage) => {
-    const url = process.env.MONGO_URL;
-    const dbName = 'CBU';
-    const client = await MongoClient.connect(url);
-    const db = client.db(dbName);
-    try {
-
-        let context = await db.collection('test').aggregate([
-            {
-                $vectorSearch: {
-                    "queryVector": await EmbeddingFunct(userMessage),
-                    "path": "embedding",
-                    "numCandidates": 100,
-                    "limit": 5,
-                    "index": "cbu_vector_index2"
-                }
-            },
-            { $project: { text: 1 } }
-        ]).toArray()
-        client.close();
-        return context.reduce((acc, ele) => acc += `\n${ele.txt}\n`, "");
-    } catch (error) {
-        client.close();
-        console.log(error);
-        return null;
-    }
-}
 export const getContextFromFullSite = async (userMessage) => {
     const url = process.env.MONGO_URL;
     const dbName = 'CBU';
@@ -106,15 +51,16 @@ export const getResponse = async (contexts, userMessage, prevMessages = []) => {
         if (contexts == "") console.log("Empty context received")
         let messages = [{
             "role": "system",
-            "content": "You are a helpful chatbot designed to assist users with information about Christian Brothers University (CBU). You only provide information related to the university and do not answer questions unrelated to CBU.Answer in same language as user.",
+            "content": "You are a knowledgeable assistant designed to provide accurate, concise, and personalized information about Christian Brothers University (CBU). Your responses are based exclusively on verified information from the institution's RAG (Retrieval-Augmented Generation) database. When answering, ensure the information is directly relevant to the user's query and aligned with CBU's offerings, services, or institutional knowledge.  Do not answer questions that are  unrelated to university.Answer in same language as user.",
         }, ...prevMessages]
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [...messages, {
                 role: "user",
-                content: `Here is some information that exists in database which might help you relate to the user's query: 
+                content: `For this query, the system has retrieved the following relevant information from CBU's database: 
                     ${contexts}\n
-                    Use this information to answer the following questions concisely:  "${userMessage}"`
+                    Using this institutional data, provide a tailored and precise response to the following user query: 
+                    "${userMessage}"`
             }],
         });
         return response
