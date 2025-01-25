@@ -6,6 +6,7 @@ import cors from "cors"
 import path from 'path';
 import { fileURLToPath } from "url";
 import "dotenv/config"
+import { toolFunctions, tools } from './utils/tools.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express()
@@ -41,6 +42,7 @@ app.post('/v3/chat-bot', async (req, res) => {
         if (!userMessage) return res.status(400).send({ success: false, data: { "userMessage": userMessage } })
         const contexts = await getContextFromFullSite(userMessage)
         if (contexts == "") console.log("Empty context received")
+
         const stream = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{
@@ -54,18 +56,33 @@ app.post('/v3/chat-bot', async (req, res) => {
                         "${userMessage}"`
             }],
             stream: true,
+            tools: tools,
+            store: true,
+            tool_choice: "auto",
         });
-        let chatResponse = "";
+        let chatResponse = "", finalToolCalls = [];
         for await (const chunk of stream) {
             chatResponse += chunk.choices[0]?.delta?.content || "";
+            const toolCalls = chunk.choices[0].delta.tool_calls || [];
+            for (const toolCall of toolCalls) {
+                const { index } = toolCall;
+                if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
+                finalToolCalls[index].function.arguments += toolCall.function.arguments;
+            }
             res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content }));
         }
+
+        finalToolCalls.forEach(ele => {
+            let parameters = JSON.parse(ele.function.arguments); // Parse the arguments string
+            let functionName = ele.function.name; // Get the function name
+            const result = toolFunctions[functionName](parameters)
+        });
         console.log("chunking done, sending all at once");
+
         res.end(JSON.stringify({
             success: true,
             data: chatResponse,
-            // followUpQuestions: followUpQuestions,
-            // requestMoreQuestions: true
+            toolResponse: finalToolCalls
         }))
     } catch (error) {
         console.error("Error with chatbot API:", error);
