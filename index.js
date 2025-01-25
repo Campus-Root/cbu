@@ -83,7 +83,7 @@ app.post('/v3/chat-bot', async (req, res) => {
         res.end(JSON.stringify({
             success: true,
             data: chatResponse,
-            toolResponse: finalToolCalls
+            toolResponse: functionCalls
         }))
     } catch (error) {
         console.error("Error with chatbot API:", error);
