@@ -6,13 +6,13 @@ function followUpQuestions(args) {
     //         probability: question.probability,
     //     }))
     // );
-    return { ...args, functionName: "followUpQuestions" };
-      
+    return { arguments: { ...args }, functionName: "followUpQuestions" };
+
 }
 function requestMoreInfo(args) {
     /** Request more information from the user when the model is unable to answer */
 
-    return { ...args, functionName: "requestMoreInfo" };
+    return { arguments: { ...args }, functionName: "requestMoreInfo" };
 }
 export const toolFunctions = {
     followUpQuestions,
