@@ -16,6 +16,10 @@
         p{
             font-family: "Open Sans";
         }
+        a{
+            font-family: "Open Sans";
+            text-decoration: underline;
+        }
         .mainwrapper{
             width: 100%;
             height: 100%;
@@ -92,12 +96,27 @@
 </body>
 <script>
 
+    const allMessages=[];
+    const mainWrapper=document.getElementById("main-wrapper");
+    const title=document.getElementById("title");
+    const closeButton=document.getElementById("close-button");
+    const messagesWrapper=document.getElementById("messages-wrapper");
+    const messageInput=document.getElementById("message-input");
+    const sendButton=document.getElementById("send-button");
+    const sendIcon=document.getElementById("send-icon");
+    sendButton.addEventListener("click",(e)=>sendMessage(messageInput.value))
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage(messageInput.value)
+        }
+    });
+
     const handleMessages=()=>{
 
     }
 
     const apiRequest=async (message)=>{
-        let res=await fetch("http://18.223.170.225:3000/v2/chat-bot",{
+        let res=await fetch("http://18.223.170.225:3000/v3/chat-bot",{
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -107,11 +126,76 @@
             }),
             method: "POST"
         });
-        let data=await res.json();
-        if(data.success)
-        {
-            addMessageUI(data.data,"recieved")
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        addMessageUI("","recieved")
+        let noInfoChunk=undefined;
+        while (true && !noInfoChunk) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value,{stream:true});
+            let chunks=chunksExtractor(text);
+            noInfoChunk=chunks.find((chunk)=>chunk.toolResponse?.length!=0);
+            let msgRecieved=chunks.reduce((acc,curr)=>acc+curr.chunk,"")
+            updateMessageUI(messagesWrapper.lastChild,messagesWrapper.lastChild.innerText+msgRecieved)
         }
+        if(noInfoChunk)
+        {
+            messagesWrapper.removeChild(messagesWrapper.lastChild);
+            addMessageUI(noInfoChunk?.toolResponse[0].arguments.messageToUser,"assistant",true);
+        }
+    }
+
+    const chunksExtractor=(stream)=>{
+        let indexes=getChunkIndexes(stream);
+        //console.log("indexes",indexes)
+        let openBracketCount=0;
+        let chunks=[];
+        indexes.start.forEach((index,i) => {
+            let chunk=JSON.parse(stream.substring(index,indexes.end[i]+1))
+            console.log("chunk",chunk,chunk.toolResponse)
+            chunks.push(chunk);
+        });
+        return chunks
+    }
+
+    const getChunkIndexes=(stream)=>{
+        let endIndexes=[];
+        let startIndexes=[0];
+        let openBracketCount=0;
+        for(let i=0;i<stream.length;i++){
+            let ch=stream[i];
+            if(ch=="{")
+            {
+                openBracketCount++;
+            }
+            if(ch=="}")
+            {
+                openBracketCount--;
+            }
+            if(openBracketCount==0)
+            {
+                endIndexes.push(i)
+                if(i<stream.length-1)
+                {
+                    startIndexes.push(i+1)
+                }
+            }
+        };
+        return {
+            start:startIndexes,
+            end:endIndexes
+        }
+    }
+
+    const getCharIndexes=(str, char)=>{
+        const indexes = [];
+        for (let i = 0; i < str.length; i++) {
+            if (str[i] === char) {
+            indexes.push(i);  
+            }
+        }
+    return indexes;
     }
     
     const sendMessage=(msg)=>{
@@ -134,32 +218,32 @@
         }
     }
 
-    const addMessageUI=(msg,type)=>{
+    const addMessageUI=(msg,type,redirect)=>{
         allMessages.push({role:type=="sent"?"user":"assistant",content:msg});
-        console.log("all messages",allMessages);
         let message=document.createElement("p");
         message.className="messagewrapper";
         message.textContent=msg;
         message.style.alignSelf=type=="sent"?"end":"start";
         message.style.textAlign=type=="sent"?"end":"start";
         message.style.backgroundColor=type=="sent"?"rgba(0, 0, 0, 0.02)":"#F7F6FB"
+        if(redirect)
+        {
+            let clickMessage=document.createElement("a");
+            clickMessage.innerText=" Click here to reach us out!"
+            clickMessage.addEventListener("click", function (event) {
+                const url = "https://admissions.cbu.edu/register/request-more-info"; 
+                window.open(url, "_blank"); 
+            });
+            clickMessage.style.cursor="pointer"
+            message.appendChild(clickMessage);
+        }
         messagesWrapper.appendChild(message);
     }
+
+    const updateMessageUI=(msgElement,msg)=>{
+        msgElement.textContent=msg;
+    }
     
-    const allMessages=[];
-    const mainWrapper=document.getElementById("main-wrapper");
-    const title=document.getElementById("title");
-    const closeButton=document.getElementById("close-button");
-    const messagesWrapper=document.getElementById("messages-wrapper");
-    const messageInput=document.getElementById("message-input");
-    const sendButton=document.getElementById("send-button");
-    const sendIcon=document.getElementById("send-icon");
-    sendButton.addEventListener("click",(e)=>sendMessage(messageInput.value))
-    messageInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            sendMessage(messageInput.value)
-        }
-  });
 </script>
 
 </html>
