@@ -71,11 +71,12 @@ app.post('/v3/chat-bot', async (req, res) => {
             }
             res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content }));
         }
-
+        const functionCalls = []
         finalToolCalls.forEach(ele => {
             let parameters = JSON.parse(ele.function.arguments); // Parse the arguments string
             let functionName = ele.function.name; // Get the function name
             const result = toolFunctions[functionName](parameters)
+            functionCalls.push(result)
         });
         console.log("chunking done, sending all at once");
 
