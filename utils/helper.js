@@ -35,6 +35,7 @@ export const getContextFromFullSite = async (userMessage) => {
                 $project: {
                     content: 1,
                     summary: 1,
+                    score: { $meta: 'vectorSearchScore' }
                 }
             }
         ]).toArray()

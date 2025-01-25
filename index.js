@@ -40,29 +40,33 @@ app.post('/v3/chat-bot', async (req, res) => {
         const { userMessage, prevMessages = [] } = req.body;
         if (!userMessage) return res.status(400).send({ success: false, data: { "userMessage": userMessage } })
         const contexts = await getContextFromFullSite(userMessage)
-        let messages = [{
-            "role": "system",
-            "content": "You are a helpful chatbot designed to provide accurate, concise, and personalized assist users with information about Christian Brothers University (CBU).Your responses are based exclusively on information from the institution's RAG (Retrieval-Augmented Generation) database.  When answering, ensure the information is directly relevant to the user's query and aligned with CBU. Do not answer questions unrelated to CBU. Answer in same language as user.",
-        }, ...prevMessages]
+        if (contexts == "") console.log("Empty context received")
         const stream = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [...messages,
-            {
+            messages: [{
+                "role": "system",
+                "content": "You are a knowledgeable assistant designed to provide accurate, concise, and personalized information about Christian Brothers University (CBU). Your responses are based exclusively on verified information from the institution's RAG (Retrieval-Augmented Generation) database. When answering, ensure the information is directly relevant to the user's query and aligned with CBU's offerings, services, or institutional knowledge.  Do not answer questions that are  unrelated to university.Answer in same language as user.",
+            }, ...prevMessages, {
                 role: "user",
-                content: `Here is some information that exists in the database which might help you relate to the user's query: 
-                            ${contexts}\n
-                            Use this information to answer the following questions concisely:  "${userMessage}"`,
-            },
-            ],
+                content: `For this query, the system has retrieved the following relevant information from CBU's database: 
+                        ${contexts}\n
+                        Using this institutional data, provide a tailored and precise response to the following user query: 
+                        "${userMessage}"`
+            }],
             stream: true,
         });
-        let botMessage = ""
+        let chatResponse = "";
         for await (const chunk of stream) {
-            botMessage += chunk.choices[0]?.delta?.content
-            res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content }) || "");
+            chatResponse += chunk.choices[0]?.delta?.content || "";
+            res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content }));
         }
         console.log("chunking done, sending all at once");
-        res.status(200).send({ success: true, data: botMessage })
+        res.end(JSON.stringify({
+            success: true,
+            data: chatResponse,
+            // followUpQuestions: followUpQuestions,
+            // requestMoreQuestions: true
+        }))
     } catch (error) {
         console.error("Error with chatbot API:", error);
     }
