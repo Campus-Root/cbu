@@ -53,23 +53,24 @@ app.post('/v3/chat-bot', async (req, res) => {
                 content: `For this query, the system has retrieved the following relevant information from CBU's database: 
                         ${contexts}\n
                         Using this institutional data, provide a tailored and precise response to the following user query: 
-                        "${userMessage}"`
+                        "${userMessage}"
+                        Also use tools to suggest follow-up questions the user might ask which are relavant to informating given above for better understanding
+                        `
             }],
             stream: true,
             tools: tools,
             store: true,
             tool_choice: "auto",
         });
-        let chatResponse = "", finalToolCalls = [];
+        let finalToolCalls = [];
         for await (const chunk of stream) {
-            chatResponse += chunk.choices[0]?.delta?.content || "";
             const toolCalls = chunk.choices[0].delta.tool_calls || [];
             for (const toolCall of toolCalls) {
                 const { index } = toolCall;
                 if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
                 finalToolCalls[index].function.arguments += toolCall.function.arguments;
             }
-            res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content }));
+            if (chunk.choices[0]?.delta?.content !== null && chunk.choices[0]?.delta?.content !== undefined) res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content, toolResponse: [] }));
         }
         const functionCalls = []
         finalToolCalls.forEach(ele => {
@@ -81,8 +82,7 @@ app.post('/v3/chat-bot', async (req, res) => {
         console.log("chunking done, sending all at once");
 
         res.end(JSON.stringify({
-            success: true,
-            data: chatResponse,
+            chunk: "",
             toolResponse: functionCalls
         }))
     } catch (error) {

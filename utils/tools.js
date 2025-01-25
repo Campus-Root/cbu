@@ -1,11 +1,13 @@
-function followUpQuestions(questions) {
+function followUpQuestions(args) {
     /** Generate follow-up questions for better understanding */
-    return JSON.stringify(
-        questions.map((question) => ({
-            question: question.text,
-            probability: question.probability,
-        }))
-    );
+    // JSON.stringify(
+    //     questions.map((question) => ({
+    //         question: question.text,
+    //         probability: question.probability,
+    //     }))
+    // );
+    return { ...args, functionName: "followUpQuestions" };
+      
 }
 function requestMoreInfo(args) {
     /** Request more information from the user when the model is unable to answer */
@@ -38,27 +40,6 @@ export const tools = [
             },
         },
     },
-    // {
-    //     type: "function",
-    //     function: {
-    //         name: "userDetails",
-    //         description: "A function to request missing information from the user and notify the development team about the specific details that need to be provided.",
-    //         parameters: {
-    //             type: "object",
-    //             properties: {
-    //                 messageToUser: {
-    //                     type: "string",
-    //                     description: "Polite message to user that we do not have access to that piece information at the moment. we will get back to him if he provides his user details",
-    //                 },
-    //                 messageToDeveloper: {
-    //                     type: "string",
-    //                     description: "straight forward notice to the developer about the missing information ",
-    //                 }
-    //             },
-    //             required: ["messageToUser","messageToDeveloper"],
-    //         },
-    //     },
-    // },
     {
         type: "function",
         function: {
