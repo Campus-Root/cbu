@@ -73,10 +73,7 @@ app.post('/v3/chat-bot', async (req, res) => {
                 if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
                 finalToolCalls[index].function.arguments += toolCall.function.arguments;
             }
-            if (chunk.choices[0]?.delta?.content !== null && chunk.choices[0]?.delta?.content !== undefined) {
-                res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content, toolResponse: [] }));
-                res.flush();
-            }
+            if (chunk.choices[0]?.delta?.content !== null && chunk.choices[0]?.delta?.content !== undefined) res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content, toolResponse: [] }));
         }
         const functionCalls = []
         finalToolCalls.forEach(ele => {
