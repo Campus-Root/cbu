@@ -47,14 +47,18 @@ app.post('/v3/chat-bot', async (req, res) => {
             model: "gpt-4o-mini",
             messages: [{
                 "role": "system",
-                "content": "You are a knowledgeable assistant designed to provide accurate, concise, and personalized information about Christian Brothers University (CBU). Your responses are based exclusively on verified information from the institution's RAG (Retrieval-Augmented Generation) database. When answering, ensure the information is directly relevant to the user's query and aligned with CBU's offerings, services, or institutional knowledge.  Do not answer questions that are  unrelated to university.Answer in same language as user. Use tools like followup questions if necessary to suggest follow-up questions the user might ask which are relavant to informating given above for better understanding",
+                "content": `You are a knowledgeable assistant specifically designed to provide accurate, concise, and actionable information about Christian Brothers University (CBU). 
+                            Your primary responsibility is to leverage tools where appropriate for missing or follow-up details. When answering user queries:
+                            - If the information is incomplete or follow-up details are needed, prioritize calling the appropriate tool.
+                            - If the user's query can be directly answered based on the provided context, respond with clear and precise content.
+                            Always ensure your response is aligned with CBU's offerings, and default to tool use only when relevant. Avoid providing irrelevant information.`,
+                // "content": "You are a knowledgeable assistant designed to provide accurate, concise, and personalized information about Christian Brothers University (CBU). Your responses are based exclusively on verified information from the institution's RAG (Retrieval-Augmented Generation) database. When answering, ensure the information is directly relevant to the user's query and aligned with CBU's offerings, services, or institutional knowledge.  Do not answer questions that are  unrelated to university.Answer in same language as user. Use tools like followup questions if necessary to suggest follow-up questions the user might ask which are relavant to informating given above for better understanding",
             }, ...prevMessages, {
                 role: "user",
                 content: `For this query, the system has retrieved the following relevant information from CBU's database: 
                         ${contexts}\n
                         Using this institutional data, provide a tailored and precise response to the following user query: 
-                        "${userMessage}"
-                        `
+                        "${userMessage}"`
             }],
             stream: true,
             tools: tools,

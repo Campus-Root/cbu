@@ -48,6 +48,10 @@ export const tools = [
             parameters: {
                 type: "object",
                 properties: {
+                    messageToUser: {
+                        type: "string",
+                        description: "relevant information from CBU's database, provide a tailored and precise response to the user query:",
+                    },
                     questions: {
                         type: "array",
                         description: "List of possible follow-up questions and their probabilities",
@@ -67,7 +71,7 @@ export const tools = [
                         },
                     },
                 },
-                required: ["questions"],
+                required: ["questions", "messageToUser"],
             },
         },
     },
