@@ -66,6 +66,8 @@ app.post('/v3/chat-bot', async (req, res) => {
             tool_choice: "auto",
         });
         let finalToolCalls = [];
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Transfer-Encoding', 'chunked');
         for await (const chunk of stream) {
             const toolCalls = chunk.choices[0].delta.tool_calls || [];
             for (const toolCall of toolCalls) {
