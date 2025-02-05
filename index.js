@@ -44,7 +44,7 @@ app.post('/process-url', async (req, res) => {
         if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         await Initiator(url, source, institutionName);
-        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools });
+        // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools });
         return res.json({
             success: true,
             data: mainDoc
@@ -70,6 +70,7 @@ app.post('/chat-bot', async (req, res) => {
         let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
         const contexts = await getContext(institutionName, userMessage)
         if (contexts == "") console.log("Empty context received")
+            console.log(streamOption);
         if (!streamOption) {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
