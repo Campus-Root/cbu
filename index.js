@@ -47,7 +47,7 @@ app.post('/process-url', async (req, res) => {
         // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools });
         return res.json({
             success: true,
-            data: mainDoc
+            // data: mainDoc
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
