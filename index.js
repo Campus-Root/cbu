@@ -39,6 +39,7 @@ app.post('/v2/chat-bot', async (req, res) => {
 
 app.post('/process-url', async (req, res) => {
     try {
+        
         const { url, source, institutionName, businessName, systemPrompt, tools } = req.body;
         let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
         if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });

@@ -1,7 +1,0 @@
-requests
-crawl4ai
-langchain
-psutil
-asyncio
-rich
-pymongo
