@@ -53,7 +53,7 @@ app.post('/process-url', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-app.get("/client/:clientId", async () => {
+app.get("/client/:clientId", async (req, res) => {
     try {
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1 } });
