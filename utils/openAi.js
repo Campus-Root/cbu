@@ -37,10 +37,10 @@ export const getContext = async (institutionName, text) => {
                 }
             }
         ]).toArray()
-        client.close();
+        await client.close();
         return context.reduce((acc, ele) => acc += `\n${ele.content}\n`, "");
     } catch (error) {
-        client.close();
+        await client.close();
         console.log(error);
         return null;
     }

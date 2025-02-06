@@ -46,6 +46,7 @@ app.post('/process-url', async (req, res) => {
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         await Initiator(url, source, institutionName);
         const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
+        await client.close();
         return res.json({
             success: true,
             data: mainDoc
@@ -58,6 +59,8 @@ app.get("/client/:clientId", async (req, res) => {
     try {
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1, dp: 1, themeId: 1, facts: 1, questions: 1 } });
+        if (!clientDetails) return res.status(404).json({ error: 'Client not found' });
+        await client.close();
         res.status(200).json({ success: true, message: "Client info", data: clientDetails })
     } catch (error) {
         console.log(error);
@@ -69,6 +72,7 @@ app.post('/chat-bot', async (req, res) => {
         const { userMessage, prevMessages = [], clientId, streamOption = false } = req.body;
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
+        await client.close();
         const contexts = await getContext(institutionName, userMessage)
         if (contexts == "") console.log("Empty context received")
         console.log(streamOption);
