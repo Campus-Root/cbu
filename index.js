@@ -39,13 +39,13 @@ app.post('/v2/chat-bot', async (req, res) => {
 
 app.post('/process-url', async (req, res) => {
     try {
-        
+
         const { url, source, institutionName, businessName, systemPrompt, tools } = req.body;
         let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
         if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         await Initiator(url, source, institutionName);
-        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools,dp:"",themeId:"",facts:"" });
+        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
         return res.json({
             success: true,
             data: mainDoc
@@ -57,7 +57,7 @@ app.post('/process-url', async (req, res) => {
 app.get("/client/:clientId", async (req, res) => {
     try {
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1,dp:1,themeId:1,facts:1 } });
+        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1, dp: 1, themeId: 1, facts: 1, questions: 1 } });
         res.status(200).json({ success: true, message: "Client info", data: clientDetails })
     } catch (error) {
         console.log(error);
@@ -71,7 +71,7 @@ app.post('/chat-bot', async (req, res) => {
         let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
         const contexts = await getContext(institutionName, userMessage)
         if (contexts == "") console.log("Empty context received")
-            console.log(streamOption);
+        console.log(streamOption);
         if (!streamOption) {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
