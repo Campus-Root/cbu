@@ -127,9 +127,21 @@ export const Initiator = async (url, source, institutionName) => {
     try {
         // await installPythonPackages(); // Ensure dependencies are installed
         let databaseConnectionStr = process.env.GEN_MONGO_URL
-        await runPythonScript({ url, source, databaseConnectionStr, institutionName });
-        await insertEmbeddings()
-        await NewSearchIndex()
+
+        const response = await fetch("http://localhost:3001/process", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url, source, databaseConnectionStr, institutionName })
+        });
+
+        const result = await response.json();
+        console.log(result);
+
+        // await runPythonScript({ url, source, databaseConnectionStr, institutionName });
+        // await insertEmbeddings()
+        // await NewSearchIndex()
         return { success: true, message: "initiation successFull" }
     } catch (error) {
         console.error(`Error: ${error.message}`);
