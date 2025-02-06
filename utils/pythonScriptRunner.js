@@ -1,24 +1,5 @@
-import { spawn } from 'child_process';
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 import { EmbeddingFunct } from './openAi.js';
-// const installPythonPackages = async () => {
-//     return new Promise((resolve, reject) => {
-//         const pipProcess = spawn('pip', ['install', '-r', 'requirements.txt']);
-//         // pipProcess.stdout.on('data', (data) => console.log(`pip: ${data.toString()}`));
-//         // pipProcess.stderr.on('data', (data) => console.error(`pip error: ${data.toString()}`));
-//         pipProcess.on('close', (code) => { code === 0 ? resolve("All Python dependencies installed") : reject(new Error('Failed to install Python dependencies.')); });
-//     });
-// };
-const runPythonScript = async ({ url, source, databaseConnectionStr, institutionName }) => {
-    return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python3', ['script.py', url, source, databaseConnectionStr, "Demonstrations", "Data", institutionName]);
-        let result = '';
-        let error = '';
-        pythonProcess.stdout.on('data', (data) => console.log(data.toString()));
-        pythonProcess.stderr.on('data', (data) => console.log(data.toString()));
-        pythonProcess.on('close', (code) => { (code === 0) ? resolve(result.trim()) : reject(new Error(`Python script error: ${error}`)) });
-    });
-};
 const insertEmbeddings = async () => {
     const url = process.env.GEN_MONGO_URL;
     const client = await MongoClient.connect(url);
@@ -125,9 +106,7 @@ async function NewSearchIndex() {
 }
 export const Initiator = async (url, source, institutionName) => {
     try {
-        // await installPythonPackages(); // Ensure dependencies are installed
         let databaseConnectionStr = process.env.GEN_MONGO_URL
-
         const response = await fetch("http://localhost:3001/process", {
             method: "POST",
             headers: {
@@ -135,13 +114,10 @@ export const Initiator = async (url, source, institutionName) => {
             },
             body: JSON.stringify({ url, source, databaseConnectionStr, institutionName })
         });
-
         const result = await response.json();
         console.log(result);
-
-        // await runPythonScript({ url, source, databaseConnectionStr, institutionName });
-        // await insertEmbeddings()
-        // await NewSearchIndex()
+        await insertEmbeddings()
+        await NewSearchIndex()
         return { success: true, message: "initiation successFull" }
     } catch (error) {
         console.error(`Error: ${error.message}`);

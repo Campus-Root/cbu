@@ -45,10 +45,10 @@ app.post('/process-url', async (req, res) => {
         if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         await Initiator(url, source, institutionName);
-        // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools });
+        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools,dp:"",themeId:"",facts:"" });
         return res.json({
             success: true,
-            // data: mainDoc
+            data: mainDoc
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
