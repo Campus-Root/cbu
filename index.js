@@ -57,7 +57,7 @@ app.post('/process-url', async (req, res) => {
 app.get("/client/:clientId", async (req, res) => {
     try {
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1 } });
+        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1,dp:1,themeId:1,facts:1 } });
         res.status(200).json({ success: true, message: "Client info", data: clientDetails })
     } catch (error) {
         console.log(error);

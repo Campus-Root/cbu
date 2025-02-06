@@ -110,14 +110,15 @@ export const Initiator = async (url, source, institutionName) => {
         const response = await fetch("http://localhost:3001/process", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Connection": "keep-alive"
             },
             body: JSON.stringify({ url, source, databaseConnectionStr, institutionName })
         });
         const result = await response.json();
         console.log(result);
-        await insertEmbeddings()
-        await NewSearchIndex()
+        // await insertEmbeddings()
+        // await NewSearchIndex()
         return { success: true, message: "initiation successFull" }
     } catch (error) {
         console.error(`Error: ${error.message}`);
