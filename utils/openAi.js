@@ -2,12 +2,12 @@ import { MongoClient } from "mongodb"
 import { openai } from "./helper.js";
 export const EmbeddingFunct = async (text) => {
     try {
-        const { data } = await openai.embeddings.create({
+        const { data, model, usage } = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: text,
             encoding_format: "float",
         });
-        return data[0].embedding;
+        return { data, model, usage }
     } catch (error) {
         console.log(error);
         return null;
@@ -15,17 +15,17 @@ export const EmbeddingFunct = async (text) => {
 }
 export const getContext = async (institutionName, text) => {
     const dbName = 'Demonstrations';
-    const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
+    const [client, embeddingResult] = await Promise.all([MongoClient.connect(process.env.GEN_MONGO_URL), EmbeddingFunct(text)])
     const db = client.db(dbName);
     try {
         let context = await db.collection('Data').aggregate([
             {
                 "$vectorSearch": {
                     "exact": false,
-                    "filter": {"metadata.institutionName":institutionName},
+                    "filter": { "metadata.institutionName": institutionName },
                     "index": "Data",
                     "path": "embeddingVector",
-                    "queryVector": await EmbeddingFunct(text),
+                    "queryVector": embeddingResult.data[0].embedding,
                     "numCandidates": 100,
                     "limit": 3
                 }
@@ -33,12 +33,24 @@ export const getContext = async (institutionName, text) => {
             {
                 $project: {
                     content: 1,
+                    chunk_number: 1,
+                    metadata: 1,
                     score: { $meta: 'vectorSearchScore' }
                 }
             }
         ]).toArray()
         await client.close();
-        return context.reduce((acc, ele) => acc += `\n${ele.content}\n`, "");
+        const result = {
+            context: [], data: "", embeddingTokens: {
+                model: embeddingResult.model,
+                usage: embeddingResult.usage
+            }
+        }
+        context.forEach((ele) => {
+            result.data += '\n' + ele.content + '\n'
+            result.context.push({ chunk_number: ele.chunk_number, ...ele.metadata, score: ele.score })
+        })
+        return result;
     } catch (error) {
         await client.close();
         console.log(error);

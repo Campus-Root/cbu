@@ -72,25 +72,30 @@ app.post('/chat-bot', async (req, res) => {
         const { userMessage, prevMessages = [], clientId, streamOption = false } = req.body;
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
         let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
-        await client.close();
-        const contexts = await getContext(institutionName, userMessage)
-        if (contexts == "") console.log("Empty context received")
-        console.log(streamOption);
+        const message = { "query": userMessage, "response": "", "embeddingTokens": {}, "responseTokens": {}, clientId: new ObjectId(clientId) }
+        const { context, data, embeddingTokens } = await getContext(institutionName, userMessage)
+        message.embeddingTokens = embeddingTokens
+        message.context = context
+        if (data == "") console.log("Empty context received")
         if (!streamOption) {
-            const response = await openai.chat.completions.create({
+            const { choices, model, usage } = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
-                    { "role": "system", "content": systemPrompt, },
+                    { "role": "system", "content": systemPrompt },
                     ...prevMessages,
                     {
                         role: "user",
-                        content: UserPrompt.replace("${contexts}", contexts).replace("${userMessage}", userMessage).replace("${businessName}", businessName)
+                        content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage).replace("${businessName}", businessName)
                     }],
                 tools: tools.length > 1 ? tools : null,
                 store: tools.length > 1 ? true : null,
                 tool_choice: tools.length > 1 ? "auto" : null,
             })
-            return res.status(200).send({ success: true, data: response.choices[0].message.content })
+            message.responseTokens = { model, usage }
+            message.response = choices[0].message.content
+            await client.db("Demonstrations").collection("Analysis").insertOne(message);
+            await client.close();
+            return res.status(200).send({ success: true, data: choices[0].message.content })  // if tools are used then it works differently
         }
         const stream = await openai.chat.completions.create({
             model: "gpt-4o-mini",
@@ -99,7 +104,7 @@ app.post('/chat-bot', async (req, res) => {
                 ...prevMessages,
                 {
                     role: "user",
-                    content: UserPrompt.replace("${contexts}", contexts).replace("${userMessage}", userMessage)
+                    content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage)
                 }],
             stream: true,
             tools: tools.length > 1 ? tools : null,
@@ -110,13 +115,21 @@ app.post('/chat-bot', async (req, res) => {
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
         for await (const chunk of stream) {
-            const toolCalls = chunk.choices[0].delta.tool_calls || [];
+            const { choices } = chunk
+            if (chunk.choices[0].finish_reason === "stop") {
+                const { model, usage } = chunk
+                message.responseTokens = { model, usage }
+            }
+            const toolCalls = choices[0].delta.tool_calls || [];
             for (const toolCall of toolCalls) {
                 const { index } = toolCall;
                 if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
                 finalToolCalls[index].function.arguments += toolCall.function.arguments;
             }
-            if (chunk.choices[0]?.delta?.content !== null && chunk.choices[0]?.delta?.content !== undefined) res.write(JSON.stringify({ chunk: chunk.choices[0]?.delta?.content, toolResponse: [] }));
+            if (choices[0]?.delta?.content !== null && choices[0]?.delta?.content !== undefined) {
+                message.response += choices[0]?.delta?.content
+                res.write(JSON.stringify({ chunk: choices[0]?.delta?.content, toolResponse: [] }));
+            }
         }
         const functionCalls = []
         finalToolCalls.forEach(ele => {
@@ -125,7 +138,8 @@ app.post('/chat-bot', async (req, res) => {
             const result = toolFunctions[functionName](parameters)
             functionCalls.push(result)
         });
-        console.log("chunking done, sending all at once");
+        await client.db("Demonstrations").collection("Analysis").insertOne(message);
+        await client.close();
         res.end(JSON.stringify({
             chunk: "",
             toolResponse: functionCalls
