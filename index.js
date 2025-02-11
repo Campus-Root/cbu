@@ -10,6 +10,7 @@ import { toolFunctions, tools } from './utils/tools.js';
 import { MongoClient, ObjectId } from 'mongodb';
 import { Initiator } from './utils/pythonScriptRunner.js';
 import { getContext } from './utils/openAi.js';
+import { attempt1, attempt2 } from './utils/misc.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express()
@@ -36,16 +37,30 @@ app.post('/v2/chat-bot', async (req, res) => {
         console.error("Error with chatbot API:", error);
     }
 })
-
-app.post('/process-url', async (req, res) => {
+app.get("/get-sublinks", async (req, res) => {
+    try {
+        const { url } = req.query;
+        if (!url) return res.status(400).json({ error: 'Missing url' });
+        let subLinks = await attempt1(url)
+        if (subLinks.length === 0) {
+            console.log("No subLinks found on attempt1")
+            subLinks = await attempt2(url)
+        }
+        res.json({ success: true, data: subLinks, metaData: { size: subLinks.length } });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: error.message });
+    }
+})
+app.post('/process-urls', async (req, res) => {
     try {
 
-        const { url, source, institutionName, businessName, systemPrompt, tools } = req.body;
+        const { urls, source, businessName, systemPrompt, tools } = req.body;
         let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
-        if (!url || !source) return res.status(400).json({ error: 'Missing url or source' });
+        if (!urls || !source) return res.status(400).json({ error: 'Missing url or source' });
         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        await Initiator(url, source, institutionName);
-        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ sitemap: url, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
+        await Initiator(urls, source, businessName.replace());
+        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
         await client.close();
         return res.json({
             success: true,
