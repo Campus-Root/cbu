@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import "dotenv/config"
 import { toolFunctions, tools } from './utils/tools.js';
 import { MongoClient, ObjectId } from 'mongodb';
-import { Initiator } from './utils/pythonScriptRunner.js';
+import { Crawler } from './utils/pythonScriptRunner.js';
 import { getContext } from './utils/openAi.js';
 import { FetchUsingDroxy, FetchUsingFlaskServer, sitemapGenerator } from './utils/misc.js';
 const __filename = fileURLToPath(import.meta.url);
@@ -68,15 +68,21 @@ app.post('/process-urls', async (req, res) => {
     try {
 
         const { urls, source, businessName, systemPrompt, tools } = req.body;
-        let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
-        if (!urls || !source) return res.status(400).json({ error: 'Missing url or source' });
-        const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        await Initiator(urls, source, businessName.replace());
-        const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
-        await client.close();
+        // let UserPrompt = "For this query, the system has retrieved the following relevant information from ${businessName}’s database:  \n ${contexts}  \n Using this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n ${userMessage}  \n If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible."
+        // if (!urls || !source) return res.status(400).json({ error: 'Missing url or source' });
+        // const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
+        const batchSize = 5;
+        const resultStack = []
+        for (let i = 0; i < urls.length; i += batchSize) {
+            const batch = urls.slice(i, i + batchSize);
+            const crawlerResult = await Crawler(batch, source, businessName.replace(" ", ""))
+            if (crawlerResult.success) resultStack.push(...crawlerResult.data);
+        }
+        // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
+        // await client.close();
         return res.json({
             success: true,
-            data: mainDoc
+            data: resultStack
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
