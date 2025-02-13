@@ -53,9 +53,10 @@ export const FetchUsingFlaskServer = async (sitemapUrls) => {
                 'Connection': 'keep-alive',
             }
         });
-        return data.urls
+        return { urls: data.urls, success: true };
     } catch (error) {
-        throw new Error("error with flask server error:", error);
+        console.log("error with flask server error:", error);
+        return { success: false, error: error.message }
     }
 }
 export const FetchUsingDroxy = async (url) => {
@@ -104,14 +105,18 @@ export const FetchUsingDroxy = async (url) => {
             "method": "GET"
         });
         const data = await response.json();
-        return data.map(ele => {
-            return {
-                "lastmod": null,
-                "url": ele
-            }
-        })
+        return {
+            urls: data.map(ele => {
+                return {
+                    "lastmod": null,
+                    "url": ele
+                }
+            }),
+            success: true
+        }
     } catch (error) {
-        throw new Error("error with api.droxy.ai error:", error);
+        console.log("error with api.droxy error:", error);
+        return { success: false, error: error.message }
     }
 }
 

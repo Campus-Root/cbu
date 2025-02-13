@@ -42,12 +42,21 @@ app.get("/get-sublinks", async (req, res) => {
         const { url } = req.query;
         if (!url) return res.status(400).json({ error: 'Missing url' });
         let { sitemapUrls, mainUrl } = await sitemapGenerator(url)
-        console.log({ sitemapUrls, mainUrl });
-        let subLinks = await FetchUsingFlaskServer(sitemapUrls)
-        let src = "flask"
-        if (subLinks.length == 0) {
-            subLinks = await FetchUsingDroxy(mainUrl)
-            src = "droxy"
+        let subLinks = [];
+        let src = "";
+        if (sitemapUrls && sitemapUrls.length > 0) {
+            const flaskResult = await FetchUsingFlaskServer(sitemapUrls);
+            if (flaskResult.success) {
+                subLinks = flaskResult.urls;
+                src = "flask";
+            }
+        }
+        if (subLinks.length === 0) {
+            const droxyResult = await FetchUsingDroxy(mainUrl || url);
+            if (droxyResult.success) {
+                subLinks = droxyResult.urls;
+                src = "droxy";
+            }
         }
         res.json({ success: true, metaData: { src: src, size: subLinks.length }, data: subLinks });
     } catch (error) {
