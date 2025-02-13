@@ -83,7 +83,7 @@ app.post('/process-urls', async (req, res) => {
         }
         // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
         // await client.close();
-        return res.json({
+        res.end({
             success: true,
             data: resultStack,
             message:"all at once"
