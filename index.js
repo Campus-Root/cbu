@@ -76,13 +76,17 @@ app.post('/process-urls', async (req, res) => {
         for (let i = 0; i < urls.length; i += batchSize) {
             const batch = urls.slice(i, i + batchSize);
             const crawlerResult = await Crawler(batch, source, businessName.replace(" ", ""))
-            if (crawlerResult.success) resultStack.push(crawlerResult.data);
+            if (crawlerResult.success) {
+                res.write(JSON.stringify(crawlerResult.data.results))
+                resultStack.push(...crawlerResult.data.results)
+            };
         }
         // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
         // await client.close();
         return res.json({
             success: true,
-            data: resultStack
+            data: resultStack,
+            message:"all at once"
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
