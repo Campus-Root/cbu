@@ -44,10 +44,12 @@ app.get("/get-sublinks", async (req, res) => {
         let { sitemapUrls, mainUrl } = await sitemapGenerator(url)
         console.log({ sitemapUrls, mainUrl });
         let subLinks = await FetchUsingFlaskServer(sitemapUrls)
+        src = "flask"
         if (subLinks.length == 0) {
             subLinks = await FetchUsingDroxy(mainUrl)
+            src = "droxy"
         }
-        res.json({ success: true, data: subLinks, metaData: { size: subLinks.length } });
+        res.json({ success: true, metaData: { src: src, size: subLinks.length }, data: subLinks });
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: error.message });
