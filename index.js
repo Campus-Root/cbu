@@ -76,7 +76,7 @@ app.post('/process-urls', async (req, res) => {
         for (let i = 0; i < urls.length; i += batchSize) {
             const batch = urls.slice(i, i + batchSize);
             const crawlerResult = await Crawler(batch, source, businessName.replace(" ", ""))
-            if (crawlerResult.success) resultStack.push(...crawlerResult.data);
+            if (crawlerResult.success) resultStack.push(crawlerResult.data);
         }
         // const mainDoc = await client.db("Demonstrations").collection("Admin").insertOne({ urls: urls, businessName, institutionName, systemPrompt, UserPrompt, tools, dp: "", themeId: "", facts: "" });
         // await client.close();
