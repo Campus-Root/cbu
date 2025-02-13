@@ -1,26 +1,14 @@
 
 import { URL } from 'url';
 import psl from 'psl';
-// import axios from 'axios';
-// import xml2js from 'xml2js';
 import axios from 'axios';
-import { Parser, parseStringPromise } from 'xml2js';
-import puppeteer from 'puppeteer';
-
-export const processUrls = async (urls, mainUrl) => {
-    const urlSet = new Set();
-    const sitemapResults = await Promise.all(urls.map(url => getAllUrlsFromSitemap(url, mainUrl)));
-    sitemapResults.flat().forEach(url => urlSet.add(url));
-    console.log(`Total ${urlSet.size} URLs to be processed`);
-    return Array.from(urlSet);
-}
 export const sitemapGenerator = async (url) => {
     try {
         const urlObj = new URL(url);
         console.log("got url");
         const parsedDomain = psl.parse(urlObj.hostname);
         let baseUrl = parsedDomain.domain || urlObj.hostname;
-        console.log(baseUrl);
+
         // Attempt to fetch robots.txt
         let sitemapUrls = [];
         try {
@@ -45,63 +33,32 @@ export const sitemapGenerator = async (url) => {
                     if (sitemapResponse.status === 200) sitemapUrls.push(`https://${baseUrl}${path}`);
                 } catch (error) {
                     console.log(`error at ${path}`);
-
                 }
-
             }))
         }
         if (sitemapUrls.length === 0) {
             console.error(`No sitemap found for ${url}`);
             return [];
         }
-        console.log(sitemapUrls);
-
         return { sitemapUrls, mainUrl: `https://${baseUrl}/` };
     } catch (error) {
         console.error(`Error processing ${url}:`, error.message);
     }
 };
-// async function getAllUrlsFromSitemap(sitemapUrl, visitedSitemaps = new Set()) {
-//     if (visitedSitemaps.has(sitemapUrl)) return [];
-//     try {
-//         const response = await axios.get(sitemapUrl, {
-//             headers: {
-//                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-//                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-//                 'Referer': 'https://www.google.com/',
-//             }
-//         });
-//         visitedSitemaps.add(sitemapUrl);
-//         const parser = new xml2js.Parser();
-//         const result = await parser.parseStringPromise(response.data);
-//         let urls = [];
-//         if (result.urlset && result.urlset.url) urls = result.urlset.url.map(entry => entry.loc[0]);
-//         if (result.sitemapindex && result.sitemapindex.sitemap) {
-//             for (const sitemap of result.sitemapindex.sitemap) {
-//                 const nestedUrls = await getAllUrlsFromSitemap(sitemap.loc[0], visitedSitemaps);
-//                 urls.push(...nestedUrls);
-//             }
-//         }
-//         return urls;
-//     } catch (error) {
-//         console.error(`Error fetching sitemap: ${sitemapUrl}`, error);
-//         return [];
-//     }
-// }
-export const attempt1 = async (url) => {
-    const { sitemapUrls, mainUrl } = await sitemapGenerator(url);
-    if (sitemapUrls.length === 0) {
-        console.error(`No sitemap found for ${url}`);
-        return [];
+export const FetchUsingFlaskServer = async (sitemapUrls) => {
+    try {
+        const { data } = await axios.post("http://localhost:3001/fetch-urls", { "sitemap_urls": sitemapUrls }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Connection': 'keep-alive',
+            }
+        });
+        return data.urls
+    } catch (error) {
+        throw new Error("error with flask server error:", error);
     }
-    let sublinks = await processUrls(sitemapUrls, mainUrl);
-    if (sublinks.length === 0) {
-        console.log(`No sublinks found for ${sitemapUrls}`);
-        return [];
-    }
-    return sublinks
 }
-export const attempt2 = async (url) => {
+export const FetchUsingDroxy = async (url) => {
     try {
         let response = await fetch("https://api.droxy.ai/auth/login", {
             "headers": {
@@ -147,81 +104,34 @@ export const attempt2 = async (url) => {
             "method": "GET"
         });
         const data = await response.json();
-        return data
+        return data.map(ele => {
+            return {
+                "lastmod": null,
+                "url": ele
+            }
+        })
     } catch (error) {
         throw new Error("error with api.droxy.ai error:", error);
     }
 }
 
-
-
-const USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
-];
-
-const getRandomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-
-const fetchWithRetry = async (url, retries = 3, delayMs = 2000, mainUrl) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const response = await axios.get(url, {
-                headers: {
-                    'User-Agent': getRandomUserAgent(),
-                    'Accept': 'application/xml,text/xml;q=0.9,*/*;q=0.8',
-                    'Referer': mainUrl,
-                }
-            });
-            writeFileSync("resp.txt", response);
-            return response.data;
-        } catch (error) {
-            console.warn(`Attempt ${attempt} failed for ${url}: ${error.message}`);
-            if (attempt < retries) await new Promise(res => setTimeout(res, delayMs));
-            if (attempt === retries) {
-                console.log(`Axios failed after ${retries} attempts. Falling back to Puppeteer...`);
-                return fetchWithPuppeteer(url, mainUrl);
-            }
-        }
-    }
-    console.error(`Failed to fetch ${url} after ${retries} attempts.`);
-    return null;
-};
-const fetchWithPuppeteer = async (url, mainUrl) => {
-    const browser = await puppeteer.launch({ headless: 'new' });
-    const page = await browser.newPage();
-    await page.setUserAgent(getRandomUserAgent());
-    let content
-    try {
-        await page.goto(url);
-        content = await page.content();
-    } catch (error) {
-        console.error(`Puppeteer failed for ${url}: ${error.message}`);
-        return null;
-    } finally {
-        await browser.close();
-        return content;
-    }
-};
-
-const getAllUrlsFromSitemap = async (sitemapUrl, mainUrl, visitedSitemaps = new Set()) => {
-    if (visitedSitemaps.has(sitemapUrl)) return [];
-    console.log(`Fetching: ${sitemapUrl}`);
-    const xmlData = await fetchWithRetry(sitemapUrl, 1, 5000, mainUrl);
-    if (!xmlData) return [];
-    visitedSitemaps.add(sitemapUrl);
-    const parser = new Parser();
-    const result = await parser.parseStringPromise(xmlData);
-    let urls = [];
-    if (result.urlset?.url) {
-        urls = result.urlset.url.map(entry => entry.loc[0]);
-    }
-    if (result.sitemapindex?.sitemap) {
-        for (const sitemap of result.sitemapindex.sitemap) {
-            const nestedUrls = await getAllUrlsFromSitemap(sitemap.loc[0], visitedSitemaps);
-            urls.push(...nestedUrls);
-        }
-    }
-
-    return urls;
-};
+// root@ip-172-31-9-164:/home/ubuntu/Ai-Agent# curl -X POST http://localhost:3001/process \
+//      -H "Content-Type: application/json" \
+//      -d '{
+//         "urls": [
+//             "https://harrisburgu.edu/robxzvxv",
+//             "https://apply.harrisburgu.edu/apply",
+//             "https://apply.harrisburgu.edu/register/inquiry",
+//             "https://centers.harrisburgu.edu/aquaponics",
+//             "https://centers.harrisburgu.edu/caegt",
+//             "https://centers.harrisburgu.edu/carc",
+//             "https://centers.harrisburgu.edu/stormwerx"
+//         ],
+//         "maxConcurrent": 3,
+//         "dbName": "NewProcessTest",
+//         "collectionName": "Data",
+//         "source": "website",
+//         "databaseConnectionStr": "mongodb+srv://viz:viz1@cluster0.05ocl42.mongodb.net/",
+//         "institutionName": "harrisburgunis"
+//      }'
+// {"message":"Process completed!","result":{"failed":0,"finalData":[{"Error":null,"success":true,"url":"https://harrisburgu.edu/robxzvxv"},{"Error":null,"success":true,"url":"https://apply.harrisburgu.edu/apply"},{"Error":null,"success":true,"url":"https://apply.harrisburgu.edu/register/inquiry"},{"Error":null,"success":true,"url":"https://centers.harrisburgu.edu/aquaponics"},{"Error":null,"success":true,"url":"https://centers.harrisburgu.edu/caegt"},{"Error":null,"success":true,"url":"https://centers.harrisburgu.edu/carc"},{"Error":null,"success":true,"url":"https://centers.harrisburgu.edu/stormwerx"}],"peakMemoryUsage(MB)":119,"success":7},"success":true}

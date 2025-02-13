@@ -10,7 +10,7 @@ import { toolFunctions, tools } from './utils/tools.js';
 import { MongoClient, ObjectId } from 'mongodb';
 import { Initiator } from './utils/pythonScriptRunner.js';
 import { getContext } from './utils/openAi.js';
-import { attempt1, attempt2 } from './utils/misc.js';
+import { FetchUsingDroxy, FetchUsingFlaskServer, sitemapGenerator } from './utils/misc.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express()
@@ -41,10 +41,11 @@ app.get("/get-sublinks", async (req, res) => {
     try {
         const { url } = req.query;
         if (!url) return res.status(400).json({ error: 'Missing url' });
-        let subLinks = await attempt1(url)
-        if (subLinks.length === 0) {
-            console.log("No subLinks found on attempt1")
-            subLinks = await attempt2(url)
+        let { sitemapUrls, mainUrl } = await sitemapGenerator(url)
+        console.log({ sitemapUrls, mainUrl });
+        let subLinks = await FetchUsingFlaskServer(sitemapUrls)
+        if (subLinks.length == 0) {
+            subLinks = await FetchUsingDroxy(mainUrl)
         }
         res.json({ success: true, data: subLinks, metaData: { size: subLinks.length } });
     } catch (error) {
